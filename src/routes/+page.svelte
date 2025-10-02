@@ -54,24 +54,30 @@
 			.sort((a,b) => +a.time - +b.time)
 	}
 
-	const cleanedDataset = $derived.by(() => clean(selectedDataset));
 
-	let query = $state("");
+	let cleaned = $state<requiredColumns[]>([]);
+
+	$effect(() => {
+  		clean(selectedDataset).then(rows => {
+    		cleaned = rows;
+  		});
+	});
 
 
 
 
 </script>
-
+<!--
 {#await cleanedDataset}
   <p>loading…</p>
 {:then cleaned}
+-->
   <Line bind:selectedDataset data={cleaned} />
+  <!--
 {:catch err}
   <p>failed: {err.message}</p>
 {/await}
-
-
+-->
 
 {#await data}
 	<!-- promise is pending -->
