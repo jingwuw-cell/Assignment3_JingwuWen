@@ -1,3 +1,4 @@
+
 <script lang="ts">
     import * as d3 from 'd3'
     import { line as d3line, curveLinear } from 'd3-shape';
@@ -183,8 +184,6 @@ $effect(() => {
 });
 
 
-
-
 </script>
 
 <div class="container">
@@ -205,9 +204,6 @@ $effect(() => {
     <p class="dataRecords">Number of records: {data.length}</p>
     <div id="mount" bind:this={mount}></div>
 </div>
-
-
-
 
 <style>
 svg {

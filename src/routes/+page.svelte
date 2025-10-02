@@ -3,6 +3,7 @@
 	import * as d3 from 'd3';
 	import Line from '$lib/line.svelte';
 
+
 	const datasets = {
 		avalon: 'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BAvalon%5D_daily-avg.csv',
 		glassport_high_street:
@@ -72,7 +73,8 @@
   <p>loading…</p>
 {:then cleaned}
 -->
-  <Line bind:selectedDataset data={cleaned} />
+  	<Line bind:selectedDataset data={cleaned} />
+
   <!--
 {:catch err}
   <p>failed: {err.message}</p>
