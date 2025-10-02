@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AQIChart from '$lib/AQIChart.svelte';
 	import * as d3 from 'd3';
+	import Line from '$lib/line.svelte';
 
 	const datasets = {
 		avalon: 'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BAvalon%5D_daily-avg.csv',
@@ -20,7 +21,11 @@
 			'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BUSA-Pennsylvania-Pittsburgh%5D_daily-avg.csv'
 	};
 
-	const selectedDataset: keyof typeof datasets = $state('avalon');
+
+	let localStorage = globalThis.localStorage ?? {};
+	let selectedDataset: keyof typeof datasets = $state(localStorage.selectedDataset ?? "avalon");
+
+	$effect(() => {localStorage.selectedDataset = selectedDataset;});					
 
 	const data = $derived.by(() =>
 		d3.csv(datasets[selectedDataset], (d: any) => ({
@@ -34,7 +39,39 @@
 			usAqi: +d['US AQI']
 		}))
 	);
+
+	type requiredColumns = { time:Date; aqi:number};
+
+	async function clean(datasetKey: keyof typeof datasets): Promise<requiredColumns[]>{
+		const url=datasets[datasetKey];
+		const columns = await d3.csv(url,(d: any) =>({
+			time: new Date(d["Timestamp(UTC)"]),
+			aqi: +d["US AQI"]
+		}));
+
+		return columns
+			.filter(r =>r.time instanceof Date && ! isNaN(+r.time) && Number.isFinite(r.aqi))
+			.sort((a,b) => +a.time - +b.time)
+	}
+
+	const cleanedDataset = $derived.by(() => clean(selectedDataset));
+
+	let query = $state("");
+
+
+
+
 </script>
+
+{#await cleanedDataset}
+  <p>loading…</p>
+{:then cleaned}
+  <Line bind:selectedDataset data={cleaned} />
+{:catch err}
+  <p>failed: {err.message}</p>
+{/await}
+
+
 
 {#await data}
 	<!-- promise is pending -->
@@ -52,4 +89,6 @@
 	* {
 		font-family: sans-serif;
 	}
+
+
 </style>
