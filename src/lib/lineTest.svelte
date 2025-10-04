@@ -65,7 +65,12 @@ function chart(data, raw, opts = {}){
       .attr("width", width)
       .attr("height", height)
       .attr("viewBox", [0, 0, width, height])
-      .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+      .attr("style", "max-width: 100%; height: auto; height: intrinsic; font: 10px sans-serif;")
+      .style("-webkit-tap-highlight-color", "transparent")
+      .style("overflow", "visible")
+      .on("pointerenter pointermove", pointermoved)
+      .on("pointerleave", pointerleft)
+      .on("touchstart", event => event.preventDefault());
 
     const BANDS = [
         {name: "Good", min: 0, max: 50, color: "#9cd84e"},
@@ -166,7 +171,59 @@ if (opts.band && opts.band.length) {
       .attr("stroke-width", 1.5)
       .attr("d", line(data));
 
-      return svg.node();
+      
+
+    const tooltip = svg.append("g");
+
+    function formatValue(aqi){
+        return Number(aqi).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    }
+
+    function formatDate(time){
+        return time.toLocaleString("en-US",{
+            month:"short",
+            year:"numeric",
+            timeZone:"UTC"});
+    }
+
+    const bisect=d3.bisector(d => d.time).center;
+
+    function pointermoved(event){
+        const i=bisect(data, x.invert(d3.pointer(event)[0]));
+        tooltip.style("display", null);
+        tooltip.attr("transform", `translate(${x(data[i].time)},${y(data[i].aqi)})`);
+        
+        const path = tooltip.selectAll("path")
+            .data([,])
+            .join("path")
+                .attr("fill","white")
+                .attr("stroke","black");
+
+        const text = tooltip.selectAll("text")
+            .data([,])
+            .join("text")
+            .call(text => text
+                .selectAll("tspan")
+                .data([formatDate(data[i].time),formatValue(data[i].aqi)])
+                .join("tspan")
+                    .attr("x",0)
+                    .attr("y", (_,i) => `${i *1.1}em`)
+                    .attr("font-weight",(_,i) => i ? null : "bold")
+                    .text(d =>d));
+        size(text, path);
+    }
+
+    function pointerleft(){
+        tooltip.style("display","none");
+    }
+
+    function size(text, path) {
+    const {x, y, width: w, height: h} = text.node().getBBox();
+    text.attr("transform", `translate(${-w / 2},${15 - y})`);
+    path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+  }
+
+    return svg.node();
 }
 
 let mount: HTMLDivElement | null = null;
