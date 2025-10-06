@@ -213,8 +213,7 @@ $effect(() => {
     .data(hasLine ? [pathD] : [], () => "mean-line");
 
   sel.join(
-    enter =>
-      enter
+    enter => enter
         .append("path")
         .attr("fill", "none")
         .attr("stroke", "black")
@@ -228,8 +227,7 @@ $effect(() => {
           const interp = d3.interpolateString(from, d);
           return t => interp(t);
         }),
-    update =>
-      update
+    update => update
         .transition()
         .duration(T)
         .attrTween("d", function (d) {
@@ -238,15 +236,13 @@ $effect(() => {
           const interp = d3.interpolateString(from, d);
           return t => interp(t);
         }),
-    exit =>
-      exit
+    exit => exit
         .transition()
         .duration(T)
         .style("opacity", 0)
         .remove()
   );
 
-  // 记录本次路径，供下一次补间
   if (pathD && pathD.length) prevPathD = pathD;
 });
 
