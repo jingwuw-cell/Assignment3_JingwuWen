@@ -2,7 +2,8 @@
 <script lang="ts">
     import * as d3 from 'd3'
     import { line as d3line, curveLinear } from 'd3-shape';
-    let { selectedDataset = $bindable('avalon'), data=[]}= $props();
+    let { selectedDataset = $bindable('avalon'), data = [], stations = [] } = $props();
+
 
 const W = 928, H = Math.round(W * 0.618);
 const M = { top: 20, right: 30, bottom: 30, left: 40 };
@@ -303,15 +304,11 @@ $effect(() => {
 <div class="container">
 
     <select bind:value={selectedDataset} class="areaSelect">
-        <option value="avalon">avalon</option>
-        <option value="glassport_high_street">glassport_high_street</option>
-        <option value="lawrenceville">lawrenceville</option>
-        <option value="liberty_sahs">liberty_sahs</option>
-        <option value="manchester">manchester</option>
-        <option value="north_braddock">north_braddock</option>
-        <option value="parkway_east_near_road">parkway_east_near_road</option>
-        <option value="usa_pennsylvania_pittsburgh">usa_pennsylvania_pittsburgh</option>
+      {#each stations as s}
+          <option value={s.key}>{s.name}{s.count ? ` (${s.count})` : ''}</option>
+      {/each}
     </select>
+
 
     <label class="showRaw">
         <span>show raw data</span>

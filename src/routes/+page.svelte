@@ -5,6 +5,7 @@
 
 
 	const datasets = {
+		__all__: null as unknown as string,
 		avalon: 'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BAvalon%5D_daily-avg.csv',
 		glassport_high_street:
 			'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BGlassport%20High%20Street%5D_daily-avg.csv',
@@ -22,46 +23,73 @@
 			'https://dig.cmu.edu/datavis-fall-2025/assignments/data/%5BUSA-Pennsylvania-Pittsburgh%5D_daily-avg.csv'
 	};
 
-
 	let localStorage = globalThis.localStorage ?? {};
-	let selectedDataset: keyof typeof datasets = $state(localStorage.selectedDataset ?? "avalon");
+	let selectedDataset: keyof typeof datasets = $state((localStorage.selectedDataset ?? "__all__") as keyof typeof datasets);
 
 	$effect(() => {localStorage.selectedDataset = selectedDataset;});					
 
 	const data = $derived.by(() =>
-		d3.csv(datasets[selectedDataset], (d: any) => ({
-			city: d.City,
-			country: d.Country,
-			mainPollutant: d['Main pollutant'],
-			pm25: +d['PM2.5'],
-			state: d.State,
-			stationName: d['Station name'],
-			timestamp: new Date(d['Timestamp(UTC)']),
-			usAqi: +d['US AQI']
-		}))
+  		selectedDataset === "__all__"
+    		? Promise.resolve([])
+    		: d3.csv(datasets[selectedDataset]!, (d: any) => ({
+        		city: d.City,
+        		country: d.Country,
+        		mainPollutant: d['Main pollutant'],
+        		pm25: +d['PM2.5'],
+        		state: d.State,
+        		stationName: d['Station name'],
+        		timestamp: new Date(d['Timestamp(UTC)']),
+        		usAqi: +d['US AQI']
+      }))
 	);
 
 	type requiredColumns = { time:Date; aqi:number};
 
-	async function clean(datasetKey: keyof typeof datasets): Promise<requiredColumns[]>{
-		const url=datasets[datasetKey];
-		const columns = await d3.csv(url,(d: any) =>({
-			time: new Date(d["Timestamp(UTC)"]),
-			aqi: +d["US AQI"]
-		}));
+	type StationMeta = {
+  		key: string;
+  		name: string; 
+  		count: number;
+	};
 
-		return columns
-			.filter(r =>r.time instanceof Date && ! isNaN(+r.time) && Number.isFinite(r.aqi))
-			.sort((a,b) => +a.time - +b.time)
+
+	async function clean(datasetKey: keyof typeof datasets): Promise<requiredColumns[]>{
+  		if (datasetKey === "__all__") {
+    		return cleanMany(Object.keys(datasets).filter(k => k !== "__all__") as (keyof typeof datasets)[]);
+  		}
+  		const url = datasets[datasetKey]!;
+  		const columns = await d3.csv(url,(d: any) =>({
+    		time: new Date(d["Timestamp(UTC)"]),
+    		aqi: +d["US AQI"]
+ 		}));
+
+  		return columns
+    		.filter(r => r.time instanceof Date && !isNaN(+r.time) && Number.isFinite(r.aqi))
+    		.sort((a,b) => +a.time - +b.time);
 	}
+
+	async function cleanMany(keys: (keyof typeof datasets)[]): Promise<requiredColumns[]> {
+  		const all: requiredColumns[] = [];
+  		for (const k of keys) {
+    		const rows = await clean(k);
+    		all.push(...rows);
+  		}
+  		return all
+    		.filter(r => r.time instanceof Date && !isNaN(+r.time) && Number.isFinite(r.aqi))
+    		.sort((a,b) => +a.time - +b.time);
+	}
+
+	let stations: StationMeta[] = $state([
+  		{ key: "__all__", name: "All stations", count: 0 },
+  			...Object.keys(datasets)
+    			.filter(k => k !== "__all__")
+    			.map(k => ({ key: k, name: k, count: 0 }))
+	]);
 
 
 	let cleaned = $state<requiredColumns[]>([]);
 
 	$effect(() => {
-  		clean(selectedDataset).then(rows => {
-    		cleaned = rows;
-  		});
+  		clean(selectedDataset as keyof typeof datasets).then(rows => {cleaned = rows;});
 	});
 
 
@@ -71,7 +99,8 @@
   <p>loading…</p>
 {:then cleaned}
 -->
-  	<Line bind:selectedDataset data={cleaned} />
+  	<Line bind:selectedDataset data={cleaned} {stations} />
+
 
   <!--
 {:catch err}
