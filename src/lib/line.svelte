@@ -1,17 +1,19 @@
 
 <script lang="ts">
-    import * as d3 from 'd3'
-    import { line as d3line, curveLinear } from 'd3-shape';
-    let { selectedDataset = $bindable('avalon'), data = [], stations = [] } = $props();
+  import * as d3 from 'd3'
+  import { line as d3line, curveLinear } from 'd3-shape';
+  let { selectedDataset = $bindable('avalon'), data = [], stations = [] } = $props();
 
 
-const W = 928, H = Math.round(W * 0.618);
-const M = { top: 20, right: 30, bottom: 30, left: 40 };
-const y_scale=1.1;
-const x = d3.scaleUtc().range([M.left, W - M.right]);
-const y = d3.scaleLinear().range([H - M.bottom, M.top]);
+  const W = 928, H = Math.round(W * 0.618);
+  const M = { top: 20, right: 30, bottom: 30, left: 40 };
+  const y_scale=1.1;
+  const x = d3.scaleUtc().range([M.left, W - M.right]);
+  const y = d3.scaleLinear().range([H - M.bottom, M.top]);
 
-function toMonthlyMean(rows: Array<{ time: any; aqi: number }>) {
+
+  // find the monthly mean
+  function toMonthlyMean(rows: Array<{ time: any; aqi: number }>) {
     const map = new Map<string, { y: number; m: number; sum: number; n: number }>();
     for (const r of rows) {
       const t = new Date(r.time);
@@ -26,64 +28,63 @@ function toMonthlyMean(rows: Array<{ time: any; aqi: number }>) {
     return Array.from(map.values())
         .map(d => ({ time: new Date(Date.UTC(d.y, d.m, 15)), aqi: d.sum / d.n }))
         .sort((a, b) => +a.time - +b.time);
-}
-
-function toMonthlyP1090(rows: Array<{ time: any; aqi: number }>) {
-  const g = d3.group(
-    rows,
-    (r) => new Date(r.time).getUTCFullYear(),
-    (r) => new Date(r.time).getUTCMonth()
-  );
-
-  const out: Array<{ time: Date; p10: number; p90: number }> = [];
-  for (const [yy, mMap] of g) {
-    for (const [mm, arr] of mMap) {
-      const vals = arr
-        .map((d: any) => +d.aqi)
-        .filter((v) => Number.isFinite(v))
-        .sort(d3.ascending);
-      if (!vals.length) continue;
-      out.push({
-        time: new Date(Date.UTC(+yy, +mm, 15)),
-        p10: d3.quantile(vals, 0.10)!,
-        p90: d3.quantile(vals, 0.90)!,
-      });
-    }
   }
-  return out.sort((a, b) => +a.time - +b.time);
-}
+
+  //find the p10 and p90 band
+  function toMonthlyP1090(rows: Array<{ time: any; aqi: number }>) {
+    const g = d3.group(
+      rows,
+      (r) => new Date(r.time).getUTCFullYear(),
+      (r) => new Date(r.time).getUTCMonth()
+    );
+
+    const out: Array<{ time: Date; p10: number; p90: number }> = [];
+    for (const [yy, mMap] of g) {
+      for (const [mm, arr] of mMap) {
+        const vals = arr
+          .map((d: any) => +d.aqi)
+          .filter((v) => Number.isFinite(v))
+          .sort(d3.ascending);
+        if (!vals.length) continue;
+        out.push({
+          time: new Date(Date.UTC(+yy, +mm, 15)),
+          p10: d3.quantile(vals, 0.10)!,
+          p90: d3.quantile(vals, 0.90)!,
+        });
+      }
+    }
+    return out.sort((a, b) => +a.time - +b.time);
+  }
 
 
-const mean_data = $derived(toMonthlyMean(data));
+  const mean_data = $derived(toMonthlyMean(data));
+  const band_data = $derived(toMonthlyP1090(data));
+  let bandPath = $state("");
 
-const band_data = $derived(toMonthlyP1090(data));
-let bandPath = $state("");
+  //aqi level band
+  const BANDS = [
+    { name: "Good", min: 0,   max: 50,  color: "#9cd84e" },
+    { name: "Moderate", min: 50,  max: 100, color: "#facf39" },
+    { name: "USG", min: 100, max: 150, color: "#f99049" },
+    { name: "Unhealthy", min: 150, max: 200, color: "#f65e5f" },
+    { name: "Very Unhealthy", min: 200, max: 300, color: "#a070b6" },
+    { name: "Hazardous", min: 300, max: Infinity, color: "#a06a7b" }
+  ];
 
+  type BandRect = { id:string; x:number; y:number; w:number; h:number; color:string }
+  let bandRects = $state<BandRect[]>([]);
 
-const BANDS = [
-  { name: "Good", min: 0,   max: 50,  color: "#9cd84e" },
-  { name: "Moderate", min: 50,  max: 100, color: "#facf39" },
-  { name: "USG", min: 100, max: 150, color: "#f99049" },
-  { name: "Unhealthy", min: 150, max: 200, color: "#f65e5f" },
-  { name: "Very Unhealthy", min: 200, max: 300, color: "#a070b6" },
-  { name: "Hazardous", min: 300, max: Infinity, color: "#a06a7b" }
-];
+  let pathD = $state("");
 
-type BandRect = { id:string; x:number; y:number; w:number; h:number; color:string };
-
-let bandRects = $state<BandRect[]>([]);
-
-let pathD = $state("");
-
-
-let RawBottonStorage = globalThis.localStorage ?? {};
-let showRaw = $state((RawBottonStorage.showRaw ?? 'false') === 'true');
-$effect(() => { RawBottonStorage.showRaw = String(showRaw); });
+  // store the row data checkbox
+  let RawBottonStorage = globalThis.localStorage ?? {};
+  let showRaw = $state((RawBottonStorage.showRaw ?? 'false') === 'true');
+  $effect(() => { RawBottonStorage.showRaw = String(showRaw); });
 
 
-let rawPts = $state<Array<{cx:number; cy:number}>>([]);
+  let rawPts = $state<Array<{cx:number; cy:number}>>([]);
 
-$effect(() => {
+  $effect(() => {
     if (!mean_data.length) { pathD = ""; return; }
 
     const [xStart, xEnd] = d3.extent(mean_data, d => d.time) as [Date, Date];
@@ -93,91 +94,87 @@ $effect(() => {
     const ymaxRaw = (d3.max(data as Array<{aqi:number}>, d => d.aqi) ?? 0) * y_scale || 1;
     y.domain([0, ymaxRaw]);
 
+    //draw the line
     pathD = d3.line<{ time: Date; aqi: number }>()
         .x(d => x(d.time))
         .y(d => y(d.aqi))(mean_data) ?? "";
 
-  const [yMin, yMax] = y.domain();
-  const clamp = (v:number) => Math.max(yMin, Math.min(yMax, v));
-  const plotX = M.left;
-  const plotW = W - M.left - M.right;
+    const [yMin, yMax] = y.domain();
+    const clamp = (v:number) => Math.max(yMin, Math.min(yMax, v));
+    const plotX = M.left;
+    const plotW = W - M.left - M.right;
 
-bandRects = BANDS.map(b => {
-  const lo = clamp(b.min), hi = clamp(b.max);
-  const ok = hi > yMin && lo < yMax && lo < hi;
-  if (!ok) return null;
-  const yTop = y(hi);
-  const yBot = y(lo);
-  return { id: b.name, x: plotX, y: yTop, w: plotW, h: yBot - yTop, color: b.color };
-}).filter(Boolean) as BandRect[];
+    bandRects = BANDS.map(b => {
+      const lo = clamp(b.min), hi = clamp(b.max);
+      const ok = hi > yMin && lo < yMax && lo < hi;
+      if (!ok) return null;
+      const yTop = y(hi);
+      const yBot = y(lo);
+      return { id: b.name, x: plotX, y: yTop, w: plotW, h: yBot - yTop, color: b.color };
+    }).filter(Boolean) as BandRect[];
 
 
     bandPath = band_data.length
-    ? d3.area<{ time: Date; p10: number; p90: number }>()
+      ? d3.area<{ time: Date; p10: number; p90: number }>()
         .x(d => x(d.time))
         .y0(d => y(d.p10))
-        .y1(d => y(d.p90))(band_data) ?? ""
-    : "";
+        .y1(d => y(d.p90))(band_data) ?? "" : "";
 
     rawPts = (data as Array<{time: Date; aqi: number}>)
         .map(d => ({ cx: x(d.time), cy: y(d.aqi) }));
-
-});
-
+  });
 
 
-let gx: SVGGElement | null = null, gy: SVGGElement | null = null;
+  let gx: SVGGElement | null = null, gy: SVGGElement | null = null;
+  let edgeXs = $state<number[]>([]);
 
+  $effect(() => {
+    if (!mean_data.length) { pathD = ""; edgeXs = []; return; }
 
-let edgeXs = $state<number[]>([]);
+    const firstX = x(mean_data[0].time);
+    const lastX  = x(mean_data[mean_data.length - 1].time);
+    edgeXs = firstX === lastX ? [firstX] : [firstX, lastX];
+  });
 
-$effect(() => {
-  if (!mean_data.length) { pathD = ""; edgeXs = []; return; }
+  const T = 800;
+  let lineEl: SVGPathElement | null = null;
 
-  const firstX = x(mean_data[0].time);
-  const lastX  = x(mean_data[mean_data.length - 1].time);
-  edgeXs = firstX === lastX ? [firstX] : [firstX, lastX];
-});
+  $effect(() => {
+    if (!gx || !mean_data.length) return;
+    d3.select(gx).transition().duration(T).call(d3.axisBottom(x).ticks(W / 80).tickSizeOuter(0));
+  });
 
-const T = 800;
-let lineEl: SVGPathElement | null = null;
+  $effect(() => {
+    if (!gy || !mean_data.length) return;
+    d3.select(gy).transition().duration(T).call(d3.axisLeft(y).ticks(H / 40));
+  });
 
-$effect(() => {
-  if (!gx || !mean_data.length) return;
-  d3.select(gx).transition().duration(T).call(d3.axisBottom(x).ticks(W / 80).tickSizeOuter(0));
-});
-$effect(() => {
-  if (!gy || !mean_data.length) return;
-  d3.select(gy).transition().duration(T).call(d3.axisLeft(y).ticks(H / 40));
-});
+  //Transition for band
+  let bandsG: SVGGElement | null = null;
+  let hasRenderedBands = $state(false);
 
-//Transition for band
+  $effect(() => {
+    if (!bandsG) return;
 
-let bandsG: SVGGElement | null = null;
-let hasRenderedBands = $state(false);
+    const rects = d3
+      .select(bandsG)
+      .selectAll<SVGRectElement, BandRect>("rect")
+      .data(bandRects, (d: any) => d.id);
 
-$effect(() => {
-  if (!bandsG) return;
+      const yZero = y(0);
+      const yTop  = y(y.domain()[1]); 
 
-  const rects = d3
-    .select(bandsG)
-    .selectAll<SVGRectElement, BandRect>("rect")
-    .data(bandRects, (d: any) => d.id);
-
-    const yZero = y(0);
-    const yTop  = y(y.domain()[1]); 
-
-  rects.join(
-    enter => enter
-      .append("rect")
-      .attr("fill", d => d.color)
-      .attr("x", d => d.x)
-      .attr("width", d => d.w)
-      .attr("y", hasRenderedBands ? yTop : yZero)
-      .attr("height", 0)
-      .transition().duration(T)
-      .attr("y", d => d.y)
-      .attr("height", d => d.h),
+    rects.join(
+      enter => enter
+        .append("rect")
+        .attr("fill", d => d.color)
+        .attr("x", d => d.x)
+        .attr("width", d => d.w)
+        .attr("y", hasRenderedBands ? yTop : yZero)
+        .attr("height", 0)
+        .transition().duration(T)
+        .attr("y", d => d.y)
+        .attr("height", d => d.h),
 
     update => update
       .transition().duration(T)
@@ -192,29 +189,29 @@ $effect(() => {
         .attr("y", _ => y(y.domain()[1]))
         .attr("height", 0)
         .remove()
-  );
+    );
 
-  hasRenderedBands = true;
-});
+    hasRenderedBands = true;
+  });
 
-//Transition for line
+  //Transition for line
 
-let lineG: SVGGElement | null = null;
-let edgesG: SVGGElement | null = null;
-let prevEdgeXs: number[] = [];
-let prevPathD = "";
+  let lineG: SVGGElement | null = null;
+  let edgesG: SVGGElement | null = null;
+  let prevEdgeXs: number[] = [];
+  let prevPathD = "";
 
-$effect(() => {
-  if (!lineG) return;
+  $effect(() => {
+    if (!lineG) return;
 
-  const hasLine = !!pathD;
-  const sel = d3
-    .select(lineG)
-    .selectAll<SVGPathElement, string>("path")
-    .data(hasLine ? [pathD] : [], () => "mean-line");
+    const hasLine = !!pathD;
+    const sel = d3
+      .select(lineG)
+      .selectAll<SVGPathElement, string>("path")
+      .data(hasLine ? [pathD] : [], () => "mean-line");
 
-  sel.join(
-    enter => enter
+    sel.join(
+      enter => enter
         .append("path")
         .attr("fill", "none")
         .attr("stroke", "black")
@@ -228,7 +225,7 @@ $effect(() => {
           const interp = d3.interpolateString(from, d);
           return t => interp(t);
         }),
-    update => update
+      update => update
         .transition()
         .duration(T)
         .attrTween("d", function (d) {
@@ -237,33 +234,32 @@ $effect(() => {
           const interp = d3.interpolateString(from, d);
           return t => interp(t);
         }),
-    exit => exit
+      exit => exit
         .transition()
         .duration(T)
         .style("opacity", 0)
         .remove()
-  );
+      );
 
-  if (pathD && pathD.length) prevPathD = pathD;
-});
+    if (pathD && pathD.length) prevPathD = pathD;
+  });
 
 
-$effect(() => {
-  if (!edgesG) return;
+  $effect(() => {
+    if (!edgesG) return;
 
-  const data = edgeXs.map((ex, i) => ({ id: i ? "end" : "start", x: ex }));
-  const prevMap = new Map(
-    (prevEdgeXs || []).map((px, i) => [i ? "end" : "start", px])
-  );
+    const data = edgeXs.map((ex, i) => ({ id: i ? "end" : "start", x: ex }));
+    const prevMap = new Map(
+      (prevEdgeXs || []).map((px, i) => [i ? "end" : "start", px])
+    );
 
-  const sel = d3
-    .select(edgesG)
-    .selectAll<SVGLineElement, { id: string; x: number }>("line")
-    .data(data, d => d.id);
+    const sel = d3
+      .select(edgesG)
+      .selectAll<SVGLineElement, { id: string; x: number }>("line")
+      .data(data, d => d.id);
 
-  sel.join(
-    enter =>
-      enter
+    sel.join(
+      enter => enter
         .append("line")
         .attr("stroke", "black")
         .attr("stroke-dasharray", "4,4")
@@ -276,33 +272,103 @@ $effect(() => {
         .duration(T)
         .attr("x1", d => d.x)
         .attr("x2", d => d.x),
-    update =>
-      update
+      update => update
         .transition()
         .duration(T)
         .attr("x1", d => d.x)
         .attr("x2", d => d.x)
         .attr("y1", M.top)
         .attr("y2", H - M.bottom),
-    exit =>
-      exit
+      exit => exit
         .transition()
         .duration(T)
         .attr("y2", M.top)
         .style("opacity", 0)
         .remove()
-  );
+    );
 
-  prevEdgeXs = edgeXs.slice();
-});
+    prevEdgeXs = edgeXs.slice();
+  });
 
+  let svgEl: SVGSVGElement | null = null;
+
+  function installTooltip(svgNode: SVGSVGElement) {
+    const svg = d3.select(svgNode)
+      .on("pointerenter pointermove", pointermoved)
+      .on("pointerleave", pointerleft)
+      .on("touchstart", (event: any) => event.preventDefault());
+
+    const tooltip = svg.append("g");
+
+    function formatValue(aqi: number){
+      return Number(aqi).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    }
+
+    function formatDate(time: Date){
+      return time.toLocaleString("en-US",{
+        month:"short",
+        year:"numeric",
+       timeZone:"UTC"
+      });
+    } 
+
+    const bisect = d3.bisector((d: any) => d.time).center;
+
+    function pointermoved(event: PointerEvent){
+      const i = bisect(mean_data, x.invert(d3.pointer(event)[0]));
+      const d = mean_data[i];
+      if (!d) return;
+
+      tooltip.style("display", null);
+      tooltip.attr("transform", `translate(${x(d.time)},${y(d.aqi)})`);
+
+      const path = tooltip.selectAll("path")
+        .data([,])
+        .join("path")
+        .attr("fill","white")
+        .attr("stroke","black");
+
+      const text = tooltip.selectAll("text")
+        .data([,])
+        .join("text")
+        .call(text => text
+          .selectAll("tspan")
+          .data([formatDate(d.time), formatValue(d.aqi)])
+          .join("tspan")
+            .attr("x",0)
+            .attr("y", (_: any, i: number) => `${i * 1.1}em`)
+            .attr("font-weight", (_: any, i: number) => i ? null : "bold")
+            .text((s: string) => s)
+        );
+
+      size(text as any, path as any);
+    }
+
+    function pointerleft(){
+      tooltip.style("display","none");
+    }
+
+    function size(text: d3.Selection<SVGTextElement, unknown, null, undefined>, path: d3.Selection<SVGPathElement, unknown, null, undefined>) {
+      const bbox = (text.node() as SVGGraphicsElement).getBBox();
+      const w = bbox.width, h = bbox.height, y0 = bbox.y;
+      text.attr("transform", `translate(${-w / 2},${15 - y0})`);
+      path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+    }
+  }
+
+  let tooltipReady = $state(false);
+
+  $effect(() => {
+    if (!svgEl || !mean_data.length || tooltipReady === true) return;
+    installTooltip(svgEl);
+    tooltipReady = true;
+  });
 
 
 </script>
 
 
 <div class="container">
-
     <select bind:value={selectedDataset} class="areaSelect">
       {#each stations as s}
           <option value={s.key}>{s.name}{s.count ? ` (${s.count})` : ''}</option>
@@ -317,7 +383,9 @@ $effect(() => {
     <p class="dataRecords">Number of records: {data.length}</p>
 
 
-<svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style="--t:${T}ms; max-width:100%; height:auto; overflow:visible">
+<svg bind:this={svgEl} 
+  width={W} height={H} viewBox={`0 0 ${W} ${H}`} 
+  style="--t:${T}ms; max-width:100%; height:auto; overflow:visible">
 
     <g class="bands" opacity="0.8" bind:this={bandsG}></g>
 

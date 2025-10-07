@@ -78,12 +78,19 @@
     		.sort((a,b) => +a.time - +b.time);
 	}
 
-	let stations: StationMeta[] = $state([
-  		{ key: "__all__", name: "All stations", count: 0 },
-  			...Object.keys(datasets)
-    			.filter(k => k !== "__all__")
-    			.map(k => ({ key: k, name: k, count: 0 }))
-	]);
+	let stations: StationMeta[] = $state([{ key: "__all__", name: "All stations", count: 0 }]);
+
+	$effect(() =>
+  		Promise.all(
+    		Object.entries(datasets).filter(([k]) => k !== "__all__")
+      			.map(([key, url]) =>
+       		 		d3.csv(url as string).then(r => ({ key, name: r[0]?.["Station name"] ?? key, count: r.length }))
+      		)
+ 		).then(list => {
+    	list.sort((a,b) => b.count - a.count);
+    		stations = [{ key: "__all__", name: "All stations", count: list.reduce((s,m)=>s+m.count,0) }, ...list];
+  		})
+	);
 
 
 	let cleaned = $state<requiredColumns[]>([]);
