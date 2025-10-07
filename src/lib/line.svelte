@@ -5,7 +5,7 @@
   let { selectedDataset = $bindable('avalon'), data = [], stations = [] } = $props();
 
 
-  const W = 928, H = Math.round(W * 0.618);
+  const W = 900, H = Math.round(W * 0.618); //make H an integer
   const M = { top: 20, right: 30, bottom: 30, left: 40 };
   const y_scale=1.1;
   const x = d3.scaleUtc().range([M.left, W - M.right]);
