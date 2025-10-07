@@ -30,7 +30,7 @@
         .sort((a, b) => +a.time - +b.time);
   }
 
-  //find the p10 and p90 band
+  //find the p10-p90 band
   function toMonthlyP1090(rows: Array<{ time: any; aqi: number }>) {
     const g = d3.group(
       rows,
@@ -76,13 +76,13 @@
 
   let pathD = $state("");
 
-  // store the row data checkbox
+  // store the row data checkbox in local storage
   let RawBottonStorage = globalThis.localStorage ?? {};
   let showRaw = $state((RawBottonStorage.showRaw ?? 'false') === 'true');
   $effect(() => { RawBottonStorage.showRaw = String(showRaw); });
 
 
-  let rawPts = $state<Array<{cx:number; cy:number}>>([]);
+  let rawPts = $state<Array<{cx:number; cy:number}>>([]);  //store the raw data points
 
   $effect(() => {
     if (!mean_data.length) { pathD = ""; return; }
@@ -104,6 +104,7 @@
     const plotX = M.left;
     const plotW = W - M.left - M.right;
 
+    //draw the color bands for us aqi
     bandRects = BANDS.map(b => {
       const lo = clamp(b.min), hi = clamp(b.max);
       const ok = hi > yMin && lo < yMax && lo < hi;
@@ -124,7 +125,6 @@
         .map(d => ({ cx: x(d.time), cy: y(d.aqi) }));
   });
 
-
   let gx: SVGGElement | null = null, gy: SVGGElement | null = null;
   let edgeXs = $state<number[]>([]);
 
@@ -141,12 +141,36 @@
 
   $effect(() => {
     if (!gx || !mean_data.length) return;
-    d3.select(gx).transition().duration(T).call(d3.axisBottom(x).ticks(W / 80).tickSizeOuter(0));
+    const xAxis = d3.axisBottom(x).ticks(W / 80).tickSizeOuter(0);
+    const g = d3.select(gx);
+    g.transition().duration(T).call(xAxis);
+    g.selectAll<SVGTextElement, unknown>("text.x-label")
+      .data([null])
+      .join("text")
+        .attr("class", "x-label")
+        .attr("text-anchor", "middle")
+        .attr("fill", "currentColor")
+        .attr("x", (W - M.left - M.right) / 2 + M.left)
+        .attr("y", M.bottom) 
+        .text("Time");
   });
 
   $effect(() => {
     if (!gy || !mean_data.length) return;
-    d3.select(gy).transition().duration(T).call(d3.axisLeft(y).ticks(H / 40));
+    const yAxis = d3.axisLeft(y).ticks(H / 40);
+    const g = d3.select(gy);
+
+    g.transition().duration(T).call(yAxis);
+
+    g.selectAll<SVGTextElement, unknown>("text.y-label")
+      .data([null])
+      .join("text")
+        .attr("class", "y-label")
+        .attr("text-anchor", "middle")
+        .attr("fill", "currentColor")
+        .attr("x", -6)
+        .attr("y", M.top - 8)
+        .text("US AQI");
   });
 
   //Transition for band
@@ -194,12 +218,12 @@
     hasRenderedBands = true;
   });
 
-  //Transition for line
+  //Transition for line and edges
 
   let lineG: SVGGElement | null = null;
   let edgesG: SVGGElement | null = null;
-  let prevEdgeXs: number[] = [];
-  let prevPathD = "";
+  let prevEdgeXs: number[] = []; // edges for previous data
+  let prevPathD = ""; // path for previous data
 
   $effect(() => {
     if (!lineG) return;
@@ -290,6 +314,7 @@
     prevEdgeXs = edgeXs.slice();
   });
 
+ //tooltip for month and its mean aqi
   let svgEl: SVGSVGElement | null = null;
 
   function installTooltip(svgNode: SVGSVGElement) {
@@ -299,6 +324,7 @@
       .on("touchstart", (event: any) => event.preventDefault());
 
     const tooltip = svg.append("g");
+    let placeAbove = true;
 
     function formatValue(aqi: number){
       return Number(aqi).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -319,6 +345,11 @@
       const d = mean_data[i];
       if (!d) return;
 
+      const L = mean_data[i - 1], R = mean_data[i + 1];
+      const sL = L ? (d.aqi - L.aqi) / (+d.time - +L.time) : 0;
+      const sR = R ? (R.aqi - d.aqi) / (+R.time - +d.time) : 0;
+      placeAbove = sL > sR;
+
       tooltip.style("display", null);
       tooltip.attr("transform", `translate(${x(d.time)},${y(d.aqi)})`);
 
@@ -326,7 +357,8 @@
         .data([,])
         .join("path")
         .attr("fill","white")
-        .attr("stroke","black");
+        .attr("stroke","black")
+        .attr("opacity",0.9);
 
       const text = tooltip.selectAll("text")
         .data([,])
@@ -339,20 +371,30 @@
             .attr("y", (_: any, i: number) => `${i * 1.1}em`)
             .attr("font-weight", (_: any, i: number) => i ? null : "bold")
             .text((s: string) => s)
+            .text((s: string, i: number) => i ? `AQI: ${s}` : s)
         );
 
-      size(text as any, path as any);
+      size(text as any, path as any, placeAbove);
     }
 
     function pointerleft(){
       tooltip.style("display","none");
     }
 
-    function size(text: d3.Selection<SVGTextElement, unknown, null, undefined>, path: d3.Selection<SVGPathElement, unknown, null, undefined>) {
+    function size(
+        text: d3.Selection<SVGTextElement, unknown, null, undefined>, 
+        path: d3.Selection<SVGPathElement, unknown, null, undefined>,
+        above: boolean) {
       const bbox = (text.node() as SVGGraphicsElement).getBBox();
       const w = bbox.width, h = bbox.height, y0 = bbox.y;
-      text.attr("transform", `translate(${-w / 2},${15 - y0})`);
-      path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+      if (!above) {
+        text.attr("transform", `translate(${-w / 2},${15 - y0})`);
+        path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+      } 
+      else {
+        text.attr("transform", `translate(${-w / 2},${-(h + 15) - y0})`);
+        path.attr("d", `M${-w / 2 - 10},-5H-5l5,5l5,-5H${w / 2 + 10}v-${h + 20}h-${w + 20}z`);
+      }
     }
   }
 
@@ -364,6 +406,49 @@
     tooltipReady = true;
   });
 
+  //transition for p10-p90 band
+
+  let p10p90bandG: SVGGElement | null = null;
+  let prevBandPath = "";
+
+  $effect(() => {
+    if (!p10p90bandG) return;
+
+    const hasBand = !!bandPath;
+    const sel = d3
+      .select(p10p90bandG)
+      .selectAll<SVGPathElement, string>("path")
+      .data(hasBand ? [bandPath] : [], () => "p10p90-band");
+
+    sel.join(
+      enter => enter
+        .append("path")
+        .attr("fill", "black")
+        .attr("opacity", 0.20)
+        .attr("d", d => (prevBandPath && prevBandPath.length ? prevBandPath : d))
+        .transition().duration(T)
+        .attrTween("d", function (d) {
+          const from = this.getAttribute("d") || d;
+          const interp = d3.interpolateString(from, d);
+          return t => interp(t);
+        }),
+
+      update => update
+        .transition().duration(T)
+        .attrTween("d", function (d) {
+          const from = this.getAttribute("d") || d;
+          const interp = d3.interpolateString(from, d);
+          return t => interp(t);
+        }),
+
+      exit => exit
+        .transition().duration(T)
+        .style("opacity", 0)
+        .remove()
+    );
+
+    if (bandPath && bandPath.length) prevBandPath = bandPath;
+  });
 
 </script>
 
@@ -389,10 +474,7 @@
 
     <g class="bands" opacity="0.8" bind:this={bandsG}></g>
 
-    <g class="p1090">
-        {#if bandPath}
-            <path d={bandPath} fill="black" opacity="0.20" />
-    {/if}</g>
+    <g class="p1090" bind:this={p10p90bandG}></g>
 
     {#if showRaw}
         <g class="raw" fill="black" opacity="0.9">
@@ -425,9 +507,9 @@
         flex-direction: column;
         --h:18px;
         grid-template-columns: auto auto 1fr;
-        gap: .5rem;
+        gap: .1rem;
         align-items: stretch;
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .areaSelect{
@@ -466,4 +548,11 @@
         cx var(--t) ease, cy var(--t) ease, r var(--t) ease,
         opacity var(--t) ease, transform var(--t) ease;
     }
+
+  .x-axis .x-label, .y-axis .y-label {
+    font-size: 12px;
+    font-weight: 600;
+    fill: black;
+  }
+
 </style>
