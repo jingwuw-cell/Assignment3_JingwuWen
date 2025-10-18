@@ -5,7 +5,7 @@
   let { selectedDataset = $bindable('avalon'), data = [], stations = [] } = $props();
 
 
-  const W = 900, H = Math.round(W * 0.618); //make H an integer
+  const W = 900, H = Math.round(W * 9/16); //make H an integer
   const M = { top: 20, right: 30, bottom: 30, left: 40 };
   const y_scale=1.1;
   const x = d3.scaleUtc().range([M.left, W - M.right]);
@@ -224,6 +224,8 @@
   let edgesG: SVGGElement | null = null;
   let prevEdgeXs: number[] = []; // edges for previous data
   let prevPathD = ""; // path for previous data
+  let prevXDomain: [Date, Date] | null = null;
+  let prevYDomain: [number, number] | null = null;
 
   $effect(() => {
     if (!lineG) return;
@@ -244,19 +246,71 @@
         .transition()
         .duration(T)
         .attrTween("d", function (d) {
-          const from = this.getAttribute("d") || d;
-          if (!from || from.length === 0) return () => d;
-          const interp = d3.interpolateString(from, d);
-          return t => interp(t);
+          const curX = x.domain();
+          const curY = y.domain();
+          const sameX = !!prevXDomain && (+prevXDomain[0] === +curX[0]) && (+prevXDomain[1] === +curX[1]);
+          const sameY = !!prevYDomain && (prevYDomain[0] === curY[0]) && (prevYDomain[1] === curY[1]);
+          const domainsSame = sameX && sameY;
+
+          if(domainsSame){
+            const from = this.getAttribute("d") || prevPathD || d;
+            const interp = d3.interpolateString(from, d);
+            return (t: number) => interp(t);
+          }
+
+          const oldX = prevXDomain ?? x.domain();
+          const oldY = prevYDomain ?? y.domain();
+
+          const ix0 = d3.interpolateNumber(+oldX[0], +curX[0]);
+          const ix1 = d3.interpolateNumber(+oldX[1], +curX[1]);
+          const iy0 = d3.interpolateNumber(oldY[0],  curY[0]);
+          const iy1 = d3.interpolateNumber(oldY[1],  curY[1]);
+
+          const xr = x.range();
+          const yr = y.range();
+
+          return (t: number) => {
+            const xt = d3.scaleUtc().domain([new Date(ix0(t)), new Date(ix1(t))]).range(xr);
+            const yt = d3.scaleLinear().domain([iy0(t), iy1(t)]).range(yr);
+
+            return d3.line<{ time: Date; aqi: number }>()
+              .x(p => xt(p.time))
+              .y(p => yt(p.aqi))(mean_data) ?? "";
+          };
         }),
       update => update
         .transition()
         .duration(T)
         .attrTween("d", function (d) {
-          const from = this.getAttribute("d") || d;
-          if (!from || from.length === 0) return () => d;
-          const interp = d3.interpolateString(from, d);
-          return t => interp(t);
+          const curX = x.domain();
+          const curY = y.domain();
+          const sameX = !!prevXDomain && (+prevXDomain[0] === +curX[0]) && (+prevXDomain[1] === +curX[1]);
+          const sameY = !!prevYDomain && (prevYDomain[0] === curY[0]) && (prevYDomain[1] === curY[1]);
+          const domainsSame = sameX && sameY;
+
+          if(domainsSame){
+            const from = this.getAttribute("d") || prevPathD || d;
+            const interp = d3.interpolateString(from, d);
+            return (t: number) => interp(t);
+          }
+          
+
+          const ix0 = d3.interpolateNumber(+oldX[0], +curX[0]);
+          const ix1 = d3.interpolateNumber(+oldX[1], +curX[1]);
+          const iy0 = d3.interpolateNumber(oldY[0],  curY[0]);
+          const iy1 = d3.interpolateNumber(oldY[1],  curY[1]);
+
+          const xr = x.range();
+          const yr = y.range();
+
+          return (t: number) => {
+            const xt = d3.scaleUtc().domain([new Date(ix0(t)), new Date(ix1(t))]).range(xr);
+            const yt = d3.scaleLinear().domain([iy0(t), iy1(t)]).range(yr);
+
+            return d3.line<{ time: Date; aqi: number }>()
+              .x(p => xt(p.time))
+              .y(p => yt(p.aqi))(mean_data) ?? "";
+          };
         }),
       exit => exit
         .transition()
@@ -266,6 +320,9 @@
       );
 
     if (pathD && pathD.length) prevPathD = pathD;
+    prevXDomain = x.domain();
+    prevYDomain = y.domain();
+
   });
 
 
@@ -314,7 +371,7 @@
     prevEdgeXs = edgeXs.slice();
   });
 
- //tooltip for month and its mean aqi
+  //tooltip for month and its mean aqi
   let svgEl: SVGSVGElement | null = null;
 
   function installTooltip(svgNode: SVGSVGElement) {

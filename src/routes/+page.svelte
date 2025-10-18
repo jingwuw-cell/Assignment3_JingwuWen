@@ -101,13 +101,14 @@
 
 
 </script>
+
 <!--
 {#await cleanedDataset}
   <p>loading…</p>
 {:then cleaned}
 -->
-  	<Line bind:selectedDataset data={cleaned} {stations} />
 
+<Line bind:selectedDataset data={cleaned} {stations} />
 
   <!--
 {:catch err}
