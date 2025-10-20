@@ -1011,40 +1011,23 @@
     
   }
 
-    .container[data-mode="quarter"] .hint--1,
-    .container[data-mode="quarter"] .hint--3 { 
-      transition: 800ms;
-      color: #363636ff;
-      background: #111827; 
-    }
-    .container[data-mode="quarter"] .hint--2 {
-      transition: 800ms;
-      color: #131414ff;
-      background: #27ff4bff; 
-    }
-
-  .container[data-mode="general"] .hint--2 { 
-      transition: 800ms;
-      color: #363636ff;
-      background: #111827; 
-  }
-  .container[data-mode="general"] .hint--1, 
-  .container[data-mode="general"] .hint--3 { 
-      transition: 800ms;
-      color: #131414ff;
-      background: #27ff4bff; 
-  }
-
+  .container[data-mode="quarter"] .hint--1,
+  .container[data-mode="quarter"] .hint--3,
+  .container[data-mode="general"] .hint--2,
   .container[data-mode="annual"] .hint--1,
-  .container[data-mode="annual"] .hint--3 {
-      transition: 800ms; 
-      color: #363636ff;
-      background: #111827; 
+  .container[data-mode="annual"] .hint--3  { 
+    transition: 800ms;
+    color: #363636ff;
+    background: #111827; 
   }
+  .container[data-mode="quarter"] .hint--2,
+  .container[data-mode="general"] .hint--1, 
+  .container[data-mode="general"] .hint--3,
   .container[data-mode="annual"] .hint--2 {
-      transition: 800ms;
-      color: #131414ff;
-      background: #27ff4bff; 
+    transition: 800ms;
+    color: #131414ff;
+    background: #27ff4bff; 
   }
+
 
 </style>
