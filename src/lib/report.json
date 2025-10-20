@@ -1,0 +1,43 @@
+[
+{
+    "title": "Overview",
+    "paragraph": [
+        "This project completed the basic requirement from part 1, including the average AQI line, p10-p90 band, color bands of AQI level, legends of US AQI, all station data integration, raw data click button and so on. The main goal of this project in part 2 is to help client do analysis based on different time scales, including monthly, quarterly and annual analysis.",
+        "This project includes 3 charts, the general line chart from part 1, annual line chart and quarter line chart for further analysis."
+    ]
+},
+{
+    "title": "Monthly Analysis",
+    "paragraph": ["This project provides the tooltip. When cursor shares the same x-axle value with the monthly data point. Above or beyond the point, there would be the tooltip displaying its time and AQI value."
+    ]
+},
+{
+    "title": "Quarterly Analysis",
+    "paragraph": [
+        "When cursor is on the chart, The quarter area will be highlighted by shading the rest quarter. This function runs on annual and general line chart.",
+        "By clicking the blank space of the general chart, it will enter the quarter line chart. From the first to the fourth quarter, the line colors are distinguished by shades of blue, from light to dark. So, people could clearly see the changes of quarter average AQI level."
+    ]
+},
+{
+    "title": "Annual Analysis",
+    "paragraph": [
+        "When cursor is on the chart, The quarter area will be highlighted by shading the rest quarter. And the rest quarters will turn into the opacity of 0.2, lighter than the other years.",
+        "By scrolling up the wheel on the general chart, the chart will be converted into the annual line chart of the year that cursor aiming at."
+    ]
+},
+{
+    "title": "Challenges",
+    "paragraph": ["After complete the part 1 programming, I began to add transition and animation to each element in this figure to make switching smoother. The problem appeared when it came to the line. Its reference is the value on X axle, so every time it switched the sites with different time scale, the line with shared X domain remained and transited as normal, and the other appeared immediately. I spent at least 3-4 days on that. I tried to record the previous X domain but there are so many bugs that I could not deal with, so I finally dropped it."
+    ]
+},
+{
+    "title": "Time Spending",
+    "paragraph": ["The first part I spend at least 3 days, about 5 days in animation, 2 days on annual line chart and 1 day on quarter line chart. The first challenge is to understand the D3 usage. Then I waste time on transition of the line and I gave it up. With the experience on general line chart and annual line chart, it came easier to generate the quarter line chart."
+    ]
+},
+{
+    "title": "AI usage",
+    "paragraph": ["I mainly used AI for debugging, because there are so many variables I sometimes forgot about their location. And it helped me to understand the sentences from D3 samples like the generation of the tooltip, I adapted the codes from the D3 gallery and modified it to fit my own demand."
+    ]
+}
+]

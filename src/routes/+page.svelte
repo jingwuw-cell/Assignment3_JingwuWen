@@ -2,6 +2,8 @@
 	import AQIChart from '$lib/AQIChart.svelte';
 	import * as d3 from 'd3';
 	import Line from '$lib/line.svelte';
+	import report from '$lib/report.json';
+	import "../style.css";
 
 
 	const datasets = {
@@ -102,26 +104,53 @@
 
 </script>
 
-
-
-
-
+<h1 class="head1">My Chart</h1>
 <Line bind:selectedDataset data={cleaned} {stations} />
-<!--
-{#await data}
-	<p>loading data...</p>
-{:then data}
-	<h2>AQI Chart</h2>
-	<Line bind:selectedDataset data={cleaned} {stations} />
-{:catch error}
-	<p>Something went wrong: {error.message}</p>
-{/await}
--->
 
+<h1 class="head1">My report</h1>
+<h2 class="name">Jingwu Wen</h2>
+<div class="report">
+	{#each report as part}
+		<article class="section">
+			<svelte:element this={"h" + 3} class="title">{ part.title }</svelte:element>
+			{#each part.paragraph as p}
+				<p class="paragraph">{p}</p>
+			{/each}
+		</article>
+	{/each}
+</div>
 <style>
 	* {
 		font-family: sans-serif;
 	}
 
+	.report{
+		font-family:system-ui;
+		width:900px;
+		
+	}
+	.report .section{
+		margin-top:10px;
+	}
+	.report .title{
+		font-weight:600;
+		margin:0px;
+	}
+	.report .paragraph{
+		font-weight:300;
+		margin-top:0.5px;
+		text-align:justify;
+	}
 
+	.head1 {
+		margin:0;
+		margin-top:1em;
+	}
+	.name {
+		margin:0;
+		padding:0;
+		border:0;
+		font-size:20px;
+		font-weight:300;
+	}
 </style>

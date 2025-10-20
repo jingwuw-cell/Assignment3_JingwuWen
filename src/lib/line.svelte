@@ -957,9 +957,10 @@
   .pill-range{ opacity: .9; font-weight: 600; letter-spacing: .2px; }
   .quarterInfo{ margin: .25rem 0 0; font-size: 12px; font-weight: 600; }
 
-  .mode-hints{
+  .mode-hints{  
+		width:900px;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 3px;
     margin: .1rem 0;
     pointer-events: none;
@@ -969,7 +970,7 @@
     border-radius: 16px;
     padding: 3px 6px;
     height: 28px;
-    width: 220px;
+    width: 270px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -999,6 +1000,4 @@
     color: #131414ff;
     background: #27ff4bff; 
   }
-
-
 </style>
