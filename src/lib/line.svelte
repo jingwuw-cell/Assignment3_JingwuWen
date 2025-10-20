@@ -879,7 +879,7 @@
   
   <h3>Actions:</h3>
   <div class="mode-hints" aria-hidden="true">
-    <div class="hint hint--1">Click the chart for the Quarter View</div>
+    <div class="hint hint--1">Click the blank for the Quarter View</div>
     <div class="hint hint--2">Scroll down back to the General Chart</div>
     <div class="hint hint--3">Scroll up to the Annual Chart</div>
   </div>
