@@ -27,7 +27,7 @@
 },
 {
     "title": "Challenges",
-    "paragraph": ["After complete the part 1 programming, I began to add transition and animation to each element in this figure to make switching smoother. The problem appeared when it came to the line. Its reference is the value on X axle, so every time it switched the sites with different time scale, the line with shared X domain remained and transited as normal, and the other appeared immediately. I spent at least 3-4 days on that. I tried to record the previous X domain but there are so many bugs that I could not deal with, so I finally dropped it."
+    "paragraph": ["After complete the part 1 programming, I began to add transition and animation to each element in this figure to make switching smoother. The problem appeared when it came to the line. Its reference is the value on X axis, so every time it switched the sites with different time scale, the line with shared X domain remained and transited as normal, and the other appeared immediately. I spent at least 3-4 days on that. I tried to record the previous X domain but there are so many bugs that I could not deal with, so I finally dropped it."
     ]
 },
 {
