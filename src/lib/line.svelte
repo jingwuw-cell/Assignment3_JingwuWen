@@ -403,7 +403,6 @@
   });
 
   let edgesG: SVGGElement | null = null;
-  let prevEdgeXs: number[] = [];
   $effect (() => {
     if (!edgesG) return;
     const sel = d3.select(edgesG)
@@ -427,8 +426,6 @@
         .attr("y2", H - M.bottom),
       exit => exit.remove()
     );
-
-    prevEdgeXs = edgeXs.slice();
   });
 
   let svgEl: SVGSVGElement | null = null;
@@ -438,7 +435,6 @@
   let qRects = $state<QRect[]>([]);
   let hoveredKey = $state<string | null>(null);
   let quarterInfo = $state("Quarter: -");
-  let prevHoveredKey: string | null = null;
 
   $effect(() => {
     if (!mean_data.length || !xDomainRange) { qRects = []; return; }
@@ -672,30 +668,6 @@
     );
   });
 
-  $effect(() => {
-    if (!mean_data.length || !xDomainRange) { qRects = []; return; }
-    const [d0, d1] = xDomainRange;
-    const start = new Date(Date.UTC(d0.getUTCFullYear(), Math.floor(d0.getUTCMonth() / 3) * 3, 1));
-    const end = new Date(Date.UTC(d1.getUTCFullYear(), Math.floor(d1.getUTCMonth() / 3) * 3 + 3, 1));
-    const plotL = M.left, plotR = W - M.right;
-    const out: QRect[] = [];
-    for (let t = new Date(start); +t < +end; t = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 3, 1))) {
-      const yyy = t.getUTCFullYear();
-      const mm = t.getUTCMonth();
-      const q = Math.floor(mm / 3) + 1;
-      const t0 = new Date(Date.UTC(yyy, mm, 1));
-      const t1 = new Date(Date.UTC(yyy, mm + 3, 0, 23, 59, 59, 999));
-      const x0 = x(t0), x1 = x(t1);
-      const xa = Math.min(x0, x1), xb = Math.max(x0, x1);
-      const x0c = Math.max(plotL, Math.min(plotR, xa));
-      const x1c = Math.max(plotL, Math.min(plotR, xb));
-      if (x1c <= x0c) continue;
-      out.push({ id: `${yyy}-Q${q}`, q, year: yyy, x: x0c, w:  x1c - x0c, y: M.top, h: H - M.top - M.bottom });
-    }
-    qRects = (chartMode === 'annual' && annualYear !== null) ? out.filter(r => r.year === annualYear)
-         : (chartMode === 'quarter' ? [] : out);
-  });
-
   let legendQuarterG: SVGGElement | null = null;
 
   $effect(() => {
@@ -891,7 +863,6 @@
     display: flex;
     flex-direction: column;
     --h:18px;
-    grid-template-columns: auto auto 1fr;
     gap: .1rem;
     align-items: stretch;
     font-size: 11px;
