@@ -8,7 +8,7 @@
 },
 {
     "title": "Monthly Analysis",
-    "paragraph": ["This project provides the tooltip. When cursor shares the same x-axle value with the monthly data point. Above or beyond the point, there would be the tooltip displaying its time and AQI value."
+    "paragraph": ["This project provides the tooltip. When cursor shares the same x-axis value with the monthly data point. Above or beyond the point, there would be the tooltip displaying its time and AQI value."
     ]
 },
 {
