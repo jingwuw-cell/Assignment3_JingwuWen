@@ -107,9 +107,12 @@
 <h1 class="head1">My Chart</h1>
 <Line bind:selectedDataset data={cleaned} {stations} />
 
+
+<div class="report">
+
 <h1 class="head1">My report</h1>
 <h2 class="name">Jingwu Wen</h2>
-<div class="report">
+
 	{#each report as part}
 		<article class="section">
 			<svelte:element this={"h" + 3} class="title">{ part.title }</svelte:element>
@@ -121,13 +124,16 @@
 </div>
 <style>
 	* {
-		font-family: sans-serif;
+		font-family: system-ui;
 	}
 
 	.report{
 		font-family:system-ui;
-		width:900px;
-		
+		width:850px;
+		margin-bottom:400px;
+		margin-top:20px;
+		padding: 30px;
+		background: #f1f5d0ff;
 	}
 	.report .section{
 		margin-top:10px;
@@ -137,20 +143,20 @@
 		margin:0px;
 	}
 	.report .paragraph{
-		font-weight:300;
+		font-weight:400;
 		margin-top:0.5px;
 		text-align:justify;
 	}
 
 	.head1 {
 		margin:0;
-		margin-top:1em;
+		font-weight:600;
 	}
-	.name {
+	.report .name {
 		margin:0;
 		padding:0;
 		border:0;
 		font-size:20px;
-		font-weight:300;
+		font-weight:400;
 	}
 </style>

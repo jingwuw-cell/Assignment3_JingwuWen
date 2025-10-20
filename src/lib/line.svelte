@@ -696,7 +696,7 @@
 
 
     g.append("text")
-      .attr("x", x0 + boxW/2 - 38)
+      .attr("x", x0 + boxW/2 - 42)
       .attr("y", y0 + pad + 6)
       .attr("font-size", 11)
       .attr("font-weight", 600)
@@ -716,7 +716,7 @@
       x1: x0 + pad,
       x2: x0 + pad + 80,
       cy: yStart + i * rowH,
-      tx: x0 + pad + 90,
+      tx: x0 + pad + 87,
       ty: yStart + i * rowH + 3,
     }));
 
@@ -769,7 +769,7 @@
       .attr("class", "legend-label")
       .attr("x", d => d.tx)
       .attr("y", d => d.ty)
-      .attr("font-size", 11)
+      .attr("font-size", 10)
       .attr("fill", "#111")
       .text(d => d.label);
   });
@@ -870,7 +870,7 @@
 
   .areaSelect:hover {
     transition:300ms;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(185, 109, 247, 0.3);
   }
 
   .areaSelect:disabled {
