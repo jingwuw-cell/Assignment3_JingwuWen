@@ -102,31 +102,34 @@
 
 </script>
 
-<!--
-{#await cleanedDataset}
-  <p>loading…</p>
-{:then cleaned}
--->
+
+
+
+
+<div>
+<p> The targeted question: What is the worst season among each year? </p>
+<p>
+The visualization I'm going to do is as follows: <br>
+1 First, create a slider at the top of the figure. When cursor is on the season area, hight the slider and the whole area on the figure of certain season.<br>
+2 econd, when scroll the mouse wheel up on the hightlighted area, the chart will show the seasonal data.<br>
+3 Third, when scroll the mouse wheel down it will return to the original chart.<br>
+4 Fourth, when scroll the mouse wheel down again, the line will show the season data instead of each month.
+  And scroll up will recover it.<br>
+5 Fifth, highlight the raw data by changing its color into black when the cursor on its season area.<br>
+
+</div>
 
 <Line bind:selectedDataset data={cleaned} {stations} />
-
-  <!--
-{:catch err}
-  <p>failed: {err.message}</p>
-{/await}
--->
-
+<!--
 {#await data}
-	<!-- promise is pending -->
 	<p>loading data...</p>
 {:then data}
-	<!-- promise was fulfilled or not a Promise -->
 	<h2>AQI Chart</h2>
-	<AQIChart {data} />
+	<Line bind:selectedDataset data={cleaned} {stations} />
 {:catch error}
-	<!-- promise was rejected -->
 	<p>Something went wrong: {error.message}</p>
 {/await}
+-->
 
 <style>
 	* {
