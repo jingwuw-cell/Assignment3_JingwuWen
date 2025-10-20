@@ -105,7 +105,7 @@
   const modeLabel = $derived(
     chartMode === 'general' ? 'General'
     : chartMode === 'annual' ? `Annual (${annualYear ?? '-'})`
-    : `Quarter (${selectedQuarter ? 'Q'+selectedQuarter : '-'})`
+    : `Quarter`
   );
 
   function yearOf(d: Date) { return d.getUTCFullYear(); }
